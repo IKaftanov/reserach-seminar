@@ -1,1 +1,1 @@
-from .filter import KalmanFilter1D
+from .filter import *
