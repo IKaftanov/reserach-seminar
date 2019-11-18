@@ -1,9 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import logging
-
-
 class KalmanFilter1D:
     __name__ = 'KalmanFilter1D'
 
@@ -36,7 +33,7 @@ class KalmanFilter1D:
     def _measurement_update(self, z):
         if not all(self.p_est) or not all(self.x_est):
             raise Exception('<self.p_est> or <self.x_est> are not defined')
-        k_gain = self.H * self.p_est[-1] / (self.H * self.p_est[-1] * self.H + self.R)
+        k_gain = self.H * self.p_est[-1] / (2 * self.H * self.p_est[-1] + self.R)
         _state = self.x_est[-1] + k_gain * (z - self.H * self.x_est[-1])
         _covariance = (1 - k_gain * self.H) * self.p_est[-1]
         self._set_state(_state, _covariance)
@@ -68,7 +65,7 @@ class KalmanFilter1D:
             raise Exception('You should fit your model first')
 
     def get_delta(self, real_data: np.ndarray):
-        return np.mean(np.power(np.sum(real_data - self.states), 2))
+        return np.mean(np.sum(real_data - self.states))
 
     def _pack_variables(self):
         return {'F': self.F, 'B': self.B, 'H': self.H, 'Q': self.Q, 'R': self.R}
@@ -77,31 +74,5 @@ class KalmanFilter1D:
         return ' '.join([f'{key} = {value}' for key, value in self._pack_variables().items()])
 
 
-def find_optimal_parameters(incoming_data: np.ndarray, real_data: np.ndarray, **kwargs):
-    grid_size = kwargs.get('grid_size', 10)
-
-    selector_length = kwargs.get('selector_length', incoming_data.shape[0])
-    if real_data.shape[0] < selector_length:
-        selector_length = real_data.shape[0]
-        logging.info(f'You are using only {selector_length} of existing set')
-
-    real_data = real_data[:selector_length].copy()
-    incoming_data = incoming_data[:selector_length].copy()
-
-    r_bound = np.mean(np.abs(real_data - incoming_data)) * 10000
-    r_grid = np.linspace(-r_bound, r_bound, grid_size)
-    q_bound = real_data.std()
-    q_grid = np.linspace(-q_bound, q_bound, grid_size)
-    f_grid = np.linspace(1, 1, 1)
-    b_grid = np.linspace(0, 0, 1)
-    h_grid = np.linspace(1, 1, 1)
-    _product = np.array(np.meshgrid(r_grid, q_grid, f_grid, b_grid, h_grid)).T.reshape(-1, 5)
-    _optimal_set = None
-    _min_error = 10e+5
-    for i, _set in enumerate(_product):
-        logging.info(f'perform {i+1} epoch of {_product.shape[0]}x{_product.shape[1]}')
-        _filter = KalmanFilter1D(data=incoming_data, q=_set[1], r=_set[0], f=_set[2], b=_set[3], h=_set[4])
-        _filter.fit()
-        if _filter.get_delta(real_data) < _min_error:
-            _optimal_set = _set.copy()
-    return _min_error, {key: value for key, value in zip(['r', 'q', 'f', 'b', 'h'], _optimal_set)}
+class KalmanFilterND:
+    __name__ = 'KalmanFilterND'

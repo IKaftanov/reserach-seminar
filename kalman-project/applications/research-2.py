@@ -4,19 +4,19 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 
-from kalman import KalmanFilter1D, find_optimal_parameters
+from kalman import KalmanFilter1D
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.WARNING)
 
 np.random.seed(100)
 
-y = np.linspace(-1, 1, 5000)
+y = np.linspace(0, 1, 5000)
 z = np.random.normal(0, 1, 5000)
 
 z_y = z + y
+import arff
 
-
-fil = KalmanFilter1D(data=z_y, q=z_y.std(), r=1000)
+fil = KalmanFilter1D(data=z_y, q=1, r=580)
 fil.fit()
 
 
